@@ -11,6 +11,20 @@
         {% endblock %}
     </head>
     <body>
+        <div style="float:left">
+            <a href="{{ path ('app_shop') }}">Shop</a> |
+            <a href="{{ path ('app_products') }}">Edit Products</a> |
+            <a href="{{ path ('app_product_category') }}">Edit Categories (TODO)</a>
+        </div>
+        <div style="float:right">
+            {% if app.user %}
+                You are logged in as {{ app.user.userIdentifier }}, <a href="{{ path('app_logout') }}">Logout</a>
+            {% else %}
+                You are NOT logged in, you can <a href="{{ path('app_login') }}">Login</a> or  <a href="{{ path('app_register') }}">Register</a>
+            {% endif %}
+        </div>
+
+        <hr style="clear:both">
         {% block body %}{% endblock %}
     </body>
 </html>
