@@ -24,27 +24,20 @@ use Symfony\Component\Filesystem\Path;
 
 class ProductsController extends AbstractController
 {
-    private $db;
+
     public function __construct(EntityManagerInterface $entityManager)
     {
-        $this->db = $entityManager;
+        $this->productRepository = $entityManager->getRepository(Product::class);
     }
 
-    #[Route('/products/{disabled}', name: 'app_products')]
-    public function index (int $disabled = null): Response
+    #[Route('/products', name: 'app_products')]
+    public function index (): Response
     {
         $this->denyAccessUnlessGranted('IS_AUTHENTICATED');
 
-        if($disabled!=0 && $disabled!=1)
-            return $this->redirectToRoute('app_products_overview');
 
-        if ($disabled !== null) {
-            $products = $this->db->getRepository(Product::class)->findBy(['disabled' => $disabled]);
-            $total_products = $this->db->getRepository(Product::class)->count(['disabled' => $disabled]);
-        } else {
-            $products = $this->db->getRepository(Product::class)->findAll();
-            $total_products = $this->db->getRepository(Product::class)->count([]);
-        }
+        $products = $this->productRepository->findAll();
+        $total_products = $this->productRepository->count([]);
 
 
         return $this->render('products/index.html.twig', array(
@@ -55,7 +48,7 @@ class ProductsController extends AbstractController
     }
 
     #[Route('/products/new', name: 'app_products_new')]
-    public function new(Request $request): Response
+    public function new(Request $request,EntityManagerInterface $entityManager): Response
     {
 
         // TODO
@@ -78,10 +71,10 @@ class ProductsController extends AbstractController
 
             $product = new Product();
             $product->setName($form['name']->getData());
-            $this->db->persist($product);
-            $this->db->flush();
+            $this->productRepository->persist($product);
+            $entityManager->flush();
 
-            return $this->redirectToRoute('app_products_overview');
+            return $this->redirectToRoute('app_products');
 
         }
 
@@ -93,14 +86,14 @@ class ProductsController extends AbstractController
     }
 
     #[Route('/products/edit/{product_id}', name: 'app_products_edit')]
-    public function edit(Request $request,int $product_id, SluggerInterface $slugger): Response
+    public function edit(Request $request,int $product_id, SluggerInterface $slugger,EntityManagerInterface $entityManager): Response
     {
 
         // TODO
         // MOVE THE UPLOADER TO THE SEPARATE CLASS
         // USE THE SAME FORM IN ADD AND EDIT
 
-        $product = $this->db->getRepository(Product::class)->find($product_id);
+        $product = $this->productRepository->find($product_id);
 
         if (!$product) {
             throw $this->createNotFoundException(
@@ -163,8 +156,8 @@ class ProductsController extends AbstractController
 
             }
 
-            $this->db->flush();
-            return $this->redirectToRoute('app_products_overview');
+            $entityManager->flush();
+            return $this->redirectToRoute('app_products');
 
         }
 
@@ -177,21 +170,21 @@ class ProductsController extends AbstractController
     }
 
     #[Route('/products/delete/{product_id}', name: 'app_products_delete')]
-    public function delete(int $product_id): Response
+    public function delete(int $product_id,EntityManagerInterface $entityManager): Response
     {
 
-        $product = $this->db->getRepository(Product::class)->find($product_id);
+        $product = $this->productRepository->find($product_id);
 
         $filesystem = new Filesystem();
 
         if ($product->getImage()) {
             $imagePath =  $this->getParameter('product_images_directory').$product->getImage();
-            if(file_exists($imagePath))
+            if (file_exists('./'.$imagePath))
                 unlink('./'.$imagePath);
         }
 
-        $this->db->remove($product);
-        $this->db->flush();
+        $entityManager->remove($product);
+        $entityManager->flush();
 
         return $this->render('products/delete.html.twig', [
             'title' => 'Delete product'
@@ -199,10 +192,10 @@ class ProductsController extends AbstractController
     }
 
     #[Route('/products/delete_image/{product_id}', name: 'app_products_delete_image')]
-    public function delete_image(int $product_id): Response
+    public function delete_image(int $product_id,EntityManagerInterface $entityManager): Response
     {
 
-        $product = $this->db->getRepository(Product::class)->find($product_id);
+        $product = $this->productRepository->find($product_id);
 
         $filesystem = new Filesystem();
 
@@ -213,7 +206,7 @@ class ProductsController extends AbstractController
         }
 
         $product->setImage("");
-        $this->db->flush();
+        $entityManager->flush();
 
 
         return $this->redirectToRoute('app_products_edit',['product_id'=>$product_id]);
