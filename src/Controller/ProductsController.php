@@ -35,15 +35,16 @@ class ProductsController extends AbstractController
     {
         $this->denyAccessUnlessGranted('IS_AUTHENTICATED');
 
-
         $products = $this->productRepository->findAll();
         $total_products = $this->productRepository->count([]);
+
 
 
         return $this->render('products/index.html.twig', array(
             'title' => 'Edit product',
             'entities' => $products,
             'total_products' => $total_products,
+            'formFilter' => $formFilter,
         ));
     }
 
